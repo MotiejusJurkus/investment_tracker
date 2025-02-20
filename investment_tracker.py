@@ -1,6 +1,62 @@
 import sys
+import requests
 
 class PortfolioManager:
+    API_KEY = "BSWVS0SUEAX7QSJX" 
+    STOCK_API_URL = "https://www.alphavantage.co/query"
+
+    def check_ticker_price(self):
+        """Prompt user for stock or crypto, then fetch price from Alpha Vantage API."""
+        asset_type = input("Do you want to check a stock or cryptocurrency? (stock/crypto): ").strip().lower()
+
+        if asset_type not in ["stock", "crypto"]:
+            print("Invalid input. Please enter 'stock' or 'crypto'.\n")
+            return
+
+        ticker = input("Enter the ticker symbol (e.g., AAPL for stocks, BTC for crypto): ").upper()
+        
+        if asset_type == "crypto":
+            price = self.get_crypto_price(ticker)
+        else:
+            price = self.get_stock_price(ticker)
+
+        if price:
+            print(f"Current price of {ticker}: ${price:.2f}\n")
+        else:
+            print(f"Failed to retrieve price for {ticker}. Please check the symbol and try again.\n")
+
+
+    def get_stock_price(self, ticker):
+        """Fetch stock price from Alpha Vantage API."""
+        params = {
+            "function": "GLOBAL_QUOTE",
+            "symbol": ticker,
+            "apikey": self.API_KEY
+        }
+        response = requests.get(self.STOCK_API_URL, params=params)
+        data = response.json()
+        
+        try:
+            return float(data["Global Quote"]["05. price"])
+        except KeyError:
+            return None
+
+    def get_crypto_price(self, ticker):
+        """Fetch cryptocurrency price from Alpha Vantage API."""
+        params = {
+            "function": "CURRENCY_EXCHANGE_RATE",
+            "from_currency": ticker,
+            "to_currency": "USD",
+            "apikey": self.API_KEY
+        }
+        response = requests.get(self.STOCK_API_URL, params=params)
+        data = response.json()
+        
+        try:
+            return float(data["Realtime Currency Exchange Rate"]["5. Exchange Rate"])
+        except KeyError:
+            return None
+
     def __init__(self):
         self.portfolio = {}
 
@@ -43,11 +99,6 @@ class PortfolioManager:
 
         except ValueError:
             print("Invalid input. Please enter numeric values.\n")
-
-    def check_ticker_price(self):
-        """Price retrieval with API"""
-        ticker = input("Enter stock/crypto ticker to check price: ").upper()
-        print(f"Fetching live price for {ticker}... (API integration needed)\n")
 
     def exit_program(self):
         """Exit the program."""
