@@ -1,12 +1,62 @@
 import sys
 import requests
+import json
+import os
 
 class PortfolioManager:
     API_KEY = "BSWVS0SUEAX7QSJX" 
     STOCK_API_URL = "https://www.alphavantage.co/query"
+    PORTFOLIO_FILE = "portfolio.json"
+
+    def __init__(self):
+        self.portfolio = self.load_portfolio()
+
+    def load_portfolio(self):
+        if os.path.exists(self.PORTFOLIO_FILE):
+            try:
+                with open(self.PORTFOLIO_FILE, "r") as file:
+                    return json.load(file)
+            except json.JSONDecodeError:
+                print("Error loading portfolio.\n")
+                return {}
+        return {}
+
+    def save_portfolio(self):
+        with open(self.PORTFOLIO_FILE, "w") as file:
+            json.dump(self.portfolio, file, indent=4)
+
+    def add_position(self):
+        ticker = input("Enter stock/crypto ticker (e.g., AAPL, BTC): ").upper()
+        try:
+            shares = float(input("Enter amount of shares/coins: "))
+            entry_price = float(input("Enter entry price: $"))
+            if ticker in self.portfolio:
+                old_shares = self.portfolio[ticker]["shares"]
+                old_price = self.portfolio[ticker]["entry_price"]
+                total_cost = (old_shares * old_price) + (shares * entry_price)
+                total_shares = old_shares + shares
+                if ticker not in self.portfolio:
+                    self.portfolio[ticker] = []
+                self.portfolio[ticker].append({"shares": shares, "entry_price": entry_price})
+            else:
+                self.portfolio[ticker] = {"shares": shares, "entry_price": entry_price}
+            print(f"{ticker} added to portfolio.\n")
+            self.save_portfolio()
+        except ValueError:
+            print("Invalid input. Please enter numeric values.\n")
+
+    def check_portfolio(self):
+        if not self.portfolio:
+            print("Your portfolio is empty.\n")
+            return
+        
+        print("\nCurrent Portfolio:")
+        for ticker, details in self.portfolio.items():
+            print(f"{ticker}: {details['shares']} shares at ${details['entry_price']} entry price")
+        print()
+
 
     def check_ticker_price(self):
-        """Prompt user for stock or crypto, then fetch price from Alpha Vantage API."""
         asset_type = input("Do you want to check a stock or cryptocurrency? (stock/crypto): ").strip().lower()
 
         if asset_type not in ["stock", "crypto"]:
@@ -25,83 +75,73 @@ class PortfolioManager:
         else:
             print(f"Failed to retrieve price for {ticker}. Please check the symbol and try again.\n")
 
-
     def get_stock_price(self, ticker):
-        """Fetch stock price from Alpha Vantage API."""
         params = {
             "function": "GLOBAL_QUOTE",
             "symbol": ticker,
             "apikey": self.API_KEY
         }
-        response = requests.get(self.STOCK_API_URL, params=params)
-        data = response.json()
-        
         try:
-            return float(data["Global Quote"]["05. price"])
-        except KeyError:
+            response = requests.get(self.STOCK_API_URL, params=params, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+
+            if "Global Quote" in data and "05. price" in data["Global Quote"]:
+                return float(data["Global Quote"]["05. price"])
+            else:
+                return None
+        except requests.RequestException as e:
+            print(f"Error fetching stock data: {e}")
             return None
 
     def get_crypto_price(self, ticker):
-        """Fetch cryptocurrency price from Alpha Vantage API."""
         params = {
             "function": "CURRENCY_EXCHANGE_RATE",
             "from_currency": ticker,
             "to_currency": "USD",
             "apikey": self.API_KEY
         }
-        response = requests.get(self.STOCK_API_URL, params=params)
-        data = response.json()
-        
         try:
-            return float(data["Realtime Currency Exchange Rate"]["5. Exchange Rate"])
-        except KeyError:
+            response = requests.get(self.STOCK_API_URL, params=params,timeout=10)   
+            response.raise_for_status()
+            data = response.json()
+
+            if "Realtime Currency Exchange Rate" in data and "5. Exchange Rate" in data["Realtime Currency Exchange Rate"]:
+                return float(data["Realtime Currency Exchange Rate"]["5. Exchange Rate"])
+            else:
+                return None
+        except requests.RequestException as e:
+            print(f"Error fetching crypto data: {e}")
             return None
 
-    def __init__(self):
-        self.portfolio = {}
-
-    def add_position(self):
-        """Add a stock/crypto to portfolio with entry price and amount."""
-        ticker = input("Enter stock/crypto ticker (e.g., AAPL, BTC): ").upper()
-        try:
-            shares = float(input("Enter amount of shares/coins: "))
-            entry_price = float(input("Enter entry price: $"))
-            self.portfolio[ticker] = {"shares": shares, "entry_price": entry_price}
-            print(f"{ticker} added to portfolio.\n")
-        except ValueError:
-            print("Invalid input. Please enter numeric values.\n")
-
-    def check_portfolio(self):
-        """Display all positions in the portfolio."""
-        if not self.portfolio:
-            print("Your portfolio is empty.\n")
-            return
-        
-        print("\nCurrent Portfolio:")
-        for ticker, details in self.portfolio.items():
-            print(f"{ticker}: {details['shares']} shares at ${details['entry_price']} entry price")
-        print()
-
     def calculate_cost_average(self):
-        """Calculate cost average based on percentage change."""
         try:
             ticker = input("Enter ticker to calculate cost average: ").upper()
-            if ticker not in self.portfolio:
-                print(f"{ticker} not found in portfolio.\n")
+            asset_type = input("Is this a stock or cryptocurrency? (stock/crypto): ").strip().lower()
+
+            if asset_type == "crypto":
+                current_price = self.get_crypto_price(ticker)
+            elif asset_type == "stock":
+                current_price = self.get_stock_price(ticker)
+            else:
+                print("Invalid asset type. Please enter 'stock' or 'crypto'.\n")
+                return
+
+            if current_price is None:
+                print(f"Could not retrieve price for {ticker}. Please check the symbol.\n")
                 return
             
-            shares = float(input("Enter number of shares/coins: "))
-            percent_change = float(input("Enter percentage change (positive or negative): "))
+            percent_change = float(input("Enter percentage change (e.g., 7.5 for +7.5%, -3.2 for -3.2%): "))
 
-            old_price = self.portfolio[ticker]["entry_price"]
-            new_price = old_price * (1 + percent_change / 100)
-            print(f"New estimated price for {ticker}: ${new_price:.2f}\n")
+            entry_price = current_price / (1 + (percent_change / 100))
+
+            print(f"\nYour estimated cost average for {ticker} is: ${entry_price:.2f} per share/coin.\n")
 
         except ValueError:
             print("Invalid input. Please enter numeric values.\n")
 
     def exit_program(self):
-        """Exit the program."""
+        self.save_portfolio()
         sys.exit()
 
 def main():
