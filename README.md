@@ -5,7 +5,8 @@ Planned usage: A menu interface to select desired action
 2. Check portfolio positions with current ticker prices
 3. Calculate cost average of a stock (entry position)
 4. Retrieve current ticker price
-5. More will be added
 
 Updates:
 1. Added class PortfolioManager and main menu
+2. Implemented API
+3. Added Portfolio.json, updated calculator.
