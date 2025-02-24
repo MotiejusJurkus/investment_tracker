@@ -9,4 +9,5 @@ Planned usage: A menu interface to select desired action
 Updates:
 1. Added class PortfolioManager and main menu
 2. Implemented API
-3. Added Portfolio.json, updated calculator.
+3. Added Portfolio.json, updated calculator
+4. Added validation and automatic detection if trying to add stock or crypto. When checking portfolio, now shows price change from entry.

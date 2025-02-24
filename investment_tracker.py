@@ -25,21 +25,59 @@ class PortfolioManager:
         with open(self.PORTFOLIO_FILE, "w") as file:
             json.dump(self.portfolio, file, indent=4)
 
+    def validate_ticker(self, ticker):
+        stock_price = self.get_stock_price(ticker)
+        crypto_price = self.get_crypto_price(ticker)
+
+        if stock_price and crypto_price:
+            choice = input(f"The ticker '{ticker}' exists as both a stock and a cryptocurrency. Is this a stock or a crypto? (stock/crypto): ").strip().lower()
+            if choice == "stock":
+                return "stock", stock_price
+            elif choice == "crypto":
+                return "crypto", crypto_price
+            else:
+                print("Invalid selection.")
+                return None, None
+
+        if stock_price:
+            return "stock", stock_price
+        if crypto_price:
+            return "crypto", crypto_price
+
+        return None, None  # Invalid ticker
+
     def add_position(self):
         ticker = input("Enter stock/crypto ticker (e.g., AAPL, BTC): ").upper()
+        asset_type, current_price = self.validate_ticker(ticker)
+
+        if asset_type is None:
+            print("Invalid ticker. Please enter a valid stock or crypto symbol.\n")
+            return
+
         try:
-            shares = float(input("Enter amount of shares/coins: "))
+            amount = float(input(f"Enter amount of {'shares' if asset_type == 'stock' else 'coins'}: "))
             entry_price = float(input("Enter entry price: $"))
+
             if ticker in self.portfolio:
-                old_shares = self.portfolio[ticker]["shares"]
+                old_amount = self.portfolio[ticker]["amount"]
                 old_price = self.portfolio[ticker]["entry_price"]
-                total_cost = (old_shares * old_price) + (shares * entry_price)
-                total_shares = old_shares + shares
-                if ticker not in self.portfolio:
-                    self.portfolio[ticker] = []
-                self.portfolio[ticker].append({"shares": shares, "entry_price": entry_price})
+                
+                total_cost = (old_amount * old_price) + (amount * entry_price)
+                total_amount = old_amount + amount
+                new_entry_price = total_cost / total_amount
+
+                self.portfolio[ticker] = {
+                    "amount": total_amount,
+                    "entry_price": new_entry_price,
+                    "asset_type": asset_type
+                }
             else:
-                self.portfolio[ticker] = {"shares": shares, "entry_price": entry_price}
+                self.portfolio[ticker] = {
+                    "amount": amount,
+                    "entry_price": entry_price,
+                    "asset_type": asset_type
+                }
+
             print(f"{ticker} added to portfolio.\n")
             self.save_portfolio()
         except ValueError:
@@ -52,28 +90,26 @@ class PortfolioManager:
         
         print("\nCurrent Portfolio:")
         for ticker, details in self.portfolio.items():
-            print(f"{ticker}: {details['shares']} shares at ${details['entry_price']} entry price")
+            asset_type = details["asset_type"]
+            unit = "shares" if asset_type == "stock" else "coins"
+            current_price = self.get_stock_price(ticker) or self.get_crypto_price(ticker)
+            
+            if current_price:
+                change_percent = ((current_price - details["entry_price"]) / details["entry_price"]) * 100
+                print(f"{ticker}: {details['amount']} {unit} at ${details['entry_price']:.2f}, {change_percent:+.2f}%")
+            else:
+                print(f"{ticker}: {details['amount']} {unit} at ${details['entry_price']:.2f}, price unavailable")
         print()
 
-
     def check_ticker_price(self):
-        asset_type = input("Do you want to check a stock or cryptocurrency? (stock/crypto): ").strip().lower()
+         ticker = input("Enter the ticker symbol (e.g., AAPL for stocks, BTC for crypto): ").upper()
+         asset_type, price = self.validate_ticker(ticker)
 
-        if asset_type not in ["stock", "crypto"]:
-            print("Invalid input. Please enter 'stock' or 'crypto'.\n")
-            return
+         if asset_type is None:
+             print("Invalid ticker. Please enter a valid stock or crypto symbol.\n")
+             return
 
-        ticker = input("Enter the ticker symbol (e.g., AAPL for stocks, BTC for crypto): ").upper()
-        
-        if asset_type == "crypto":
-            price = self.get_crypto_price(ticker)
-        else:
-            price = self.get_stock_price(ticker)
-
-        if price:
-            print(f"Current price of {ticker}: ${price:.2f}\n")
-        else:
-            print(f"Failed to retrieve price for {ticker}. Please check the symbol and try again.\n")
+         print(f"Current price of {ticker} ({asset_type}): ${price:.2f}\n")
 
     def get_stock_price(self, ticker):
         params = {
@@ -102,17 +138,18 @@ class PortfolioManager:
             "apikey": self.API_KEY
         }
         try:
-            response = requests.get(self.STOCK_API_URL, params=params,timeout=10)   
+            response = requests.get(self.STOCK_API_URL, params=params, timeout=10)
             response.raise_for_status()
             data = response.json()
 
             if "Realtime Currency Exchange Rate" in data and "5. Exchange Rate" in data["Realtime Currency Exchange Rate"]:
                 return float(data["Realtime Currency Exchange Rate"]["5. Exchange Rate"])
-            else:
-                return None
+            
+            return None
         except requests.RequestException as e:
             print(f"Error fetching crypto data: {e}")
             return None
+
 
     def calculate_cost_average(self):
         try:
