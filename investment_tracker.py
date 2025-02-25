@@ -64,7 +64,7 @@ class PortfolioManager:
     def add_position(self):
         ticker = self.prompt_input("Enter stock/crypto ticker (or 'exit' to return): ")
         if ticker is None:
-            return 
+            return  # Exit to main menu
 
         ticker = ticker.upper()
         asset_type, current_price = self.validate_ticker(ticker)
@@ -90,6 +90,7 @@ class PortfolioManager:
             print("Invalid input. Please enter a numeric value.\n")
             return
 
+        # Store in portfolio
         if ticker in self.portfolio:
             old_amount = self.portfolio[ticker]["amount"]
             old_price = self.portfolio[ticker]["entry_price"]
@@ -136,7 +137,7 @@ class PortfolioManager:
 
         self.portfolio[ticker]["amount"] -= amount_to_sell
         if self.portfolio[ticker]["amount"] == 0:
-            del self.portfolio[ticker]
+            del self.portfolio[ticker]  # Remove asset if all shares/coins are sold
 
         print(f"Sold {amount_to_sell} of {ticker}.\n")
         self.save_portfolio()
