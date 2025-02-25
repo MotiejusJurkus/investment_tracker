@@ -1,10 +1,10 @@
 # investment_tracker
 Program to save your investment portfolio and calculate entry positions, returns at set prices, retrieve current ticker prices.
 Planned usage: A menu interface to select desired action
-1. Add position to portfolio
-2. Check portfolio positions with current ticker prices
-3. Calculate cost average of a stock (entry position)
-4. Retrieve current ticker price
+1. Keep track of portfolio
+2. Check portfolio positions with change in price
+3. Calculate cost average of a stock
+4. Retrieve ticker current prices
 
 Updates:
 1. Added class PortfolioManager and main menu

@@ -1,0 +1,17 @@
+{
+    "GME": {
+        "amount": 50.0,
+        "entry_price": 24.58,
+        "asset_type": "stock"
+    },
+    "SOL": {
+        "amount": 12.0,
+        "entry_price": 167.54,
+        "asset_type": "crypto"
+    },
+    "AAPL": {
+        "amount": 12.0,
+        "entry_price": 240.3,
+        "asset_type": "stock"
+    }
+}
