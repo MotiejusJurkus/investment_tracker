@@ -11,7 +11,6 @@ Updates:
 2. Implemented API
 3. Added Portfolio.json, updated calculator
 4. Added validation and automatic detection if trying to add stock or crypto. When checking portfolio, now shows price change from entry.
-
-To do:
-1. Add exit to prompts
-2. Add function to remove assets from portfolio.json
+5. Added sell function.
+6. Updated all functions to have exit to menu option
+7. Added feature to show portfolio change when checking portfolio.
