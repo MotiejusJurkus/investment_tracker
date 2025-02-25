@@ -3,13 +3,19 @@ import requests
 import json
 import os
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 class PortfolioManager:
-    API_KEY = "BSWVS0SUEAX7QSJX" 
+    API_KEY = os.getenv("ALPHA_VANTAGE_API_KEY")
     STOCK_API_URL = "https://www.alphavantage.co/query"
     PORTFOLIO_FILE = "portfolio.json"
 
     def __init__(self):
         self.portfolio = self.load_portfolio()
+        if not self.API_KEY:
+            raise ValueError("API Key not found. Make sure it's set in the .env file.")
 
     def load_portfolio(self):
         if os.path.exists(self.PORTFOLIO_FILE):

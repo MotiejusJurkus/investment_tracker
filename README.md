@@ -14,3 +14,4 @@ Updates:
 5. Added sell function.
 6. Updated all functions to have exit to menu option
 7. Added feature to show portfolio change when checking portfolio.
+8. Changed API key due to security leak and added .env file to store the key
