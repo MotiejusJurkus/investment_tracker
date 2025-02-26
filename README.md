@@ -15,3 +15,4 @@ Updates:
 6. Updated all functions to have exit to menu option
 7. Added feature to show portfolio change when checking portfolio.
 8. Changed API key due to security leak and added .env file to store the key
+9. Optimized file handling, redundant API calls, improved error handling.

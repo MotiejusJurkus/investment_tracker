@@ -11,11 +11,13 @@ class PortfolioManager:
     API_KEY = os.getenv("ALPHA_VANTAGE_API_KEY")
     STOCK_API_URL = "https://www.alphavantage.co/query"
     PORTFOLIO_FILE = "portfolio.json"
+    SAVE_INTERVAL = 5
 
     def __init__(self):
         self.portfolio = self.load_portfolio()
         if not self.API_KEY:
             raise ValueError("API Key not found. Make sure it's set in the .env file.")
+        self.operation_count = 0
 
     def load_portfolio(self):
         if os.path.exists(self.PORTFOLIO_FILE):
@@ -27,23 +29,24 @@ class PortfolioManager:
                 return {}
         return {}
 
-    def save_portfolio(self):
-        with open(self.PORTFOLIO_FILE, "w") as file:
-            json.dump(self.portfolio, file, indent=4)
+    def save_portfolio(self, force=False):
+        self.operation_count += 1
+        if self.operation_count >= self.SAVE_INTERVAL or force:
+            with open(self.PORTFOLIO_FILE, "w") as file:
+                json.dump(self.portfolio, file, indent=4)
+            self.operation_count = 0
 
     def validate_ticker(self, ticker):
+        stock_price = None
+        crypto_price = None
+        
         stock_price = self.get_stock_price(ticker)
-        crypto_price = self.get_crypto_price(ticker)
+        if stock_price is None:
+            crypto_price = self.get_crypto_price(ticker)
 
         if stock_price and crypto_price:
-            choice = input(f"The ticker '{ticker}' exists as both a stock and a cryptocurrency. Is this a stock or a crypto? (stock/crypto): ").strip().lower()
-            if choice == "stock":
-                return "stock", stock_price
-            elif choice == "crypto":
-                return "crypto", crypto_price
-            else:
-                print("Invalid selection.")
-                return None, None
+            choice = input(f"'{ticker}' exists as both a stock and a crypto. Is this a stock or crypto? (stock/crypto): ").strip().lower()
+            return ("stock", stock_price) if choice == "stock" else ("crypto", crypto_price)
 
         if stock_price:
             return "stock", stock_price
@@ -148,33 +151,30 @@ class PortfolioManager:
         
         total_invested = 0
         total_value = 0
-        
         print("\nCurrent Portfolio:")
+
         for ticker, details in self.portfolio.items():
             asset_type = details["asset_type"]
             unit = "shares" if asset_type == "stock" else "coins"
-            current_price = self.get_stock_price(ticker) or self.get_crypto_price(ticker)
-            
-            if current_price:
+            try:
+                current_price = self.get_stock_price(ticker) or self.get_crypto_price(ticker)
+                if current_price is None:
+                    raise ValueError("Price unavailable")
+                
                 entry_price = details["entry_price"]
                 amount = details["amount"]
-                
                 total_cost = entry_price * amount
                 current_value = current_price * amount
-                
                 total_invested += total_cost
                 total_value += current_value
-
                 change_percent = ((current_price - entry_price) / entry_price) * 100
                 print(f"{ticker}: {amount} {unit} at ${entry_price:.2f}, {change_percent:+.2f}%")
-            else:
+            except Exception:
                 print(f"{ticker}: {details['amount']} {unit} at ${details['entry_price']:.2f}, price unavailable")
 
         if total_invested > 0:
             portfolio_change_percent = ((total_value - total_invested) / total_invested) * 100
             print(f"\nTotal Portfolio Performance: {portfolio_change_percent:+.2f}%\n")
-        else:
-            print("\nTotal Portfolio Performance: N/A (no valid price data)\n")
 
     def check_ticker_price(self):
         ticker = self.prompt_input("Enter the ticker symbol (or 'exit' to return): ")
