@@ -113,7 +113,7 @@ class PortfolioManager:
             }
 
         print(f"{ticker} added to portfolio.\n")
-        self.save_portfolio()
+        self.save_portfolio(force=True)
 
     def sell_position(self):
         ticker = self.prompt_input("Enter the ticker of the asset to sell (or 'exit' to return): ")
