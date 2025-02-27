@@ -1,10 +1,21 @@
 # investment_tracker
-Program to save your investment portfolio and calculate entry positions, returns at set prices, retrieve current ticker prices.
-Planned usage: A menu interface to select desired action
-1. Keep track of portfolio
-2. Check portfolio positions with change in price
-3. Calculate cost average of a stock
-4. Retrieve ticker current prices
+Program to keep track of your investments, calculate entry positions and portfolio performance, and fetch real-time stock prices.
+
+Installation:
+git clone https://github.com/yourusername/investment-tracker.git
+cd investment-tracker
+pip install requests
+
+Usage - When running the program you will be greeted with a main menu with 6 options:
+1. Add a new stock/crypto investment.
+2. Sell assets from portfolio.
+3. View portfolio with performance calculation.
+4. Calculate cost average of your assets.
+5. Fetch current stock/crypto prices.
+6. Exit
+
+Configuration - The program uses Alpha Vantage for stock prices and a cryptocurrency API. Set your API keys in an .env file. You can get a free API key from https://www.alphavantage.co/support/#api-key.
+
 
 Updates:
 1. Added class PortfolioManager and main menu
@@ -16,3 +27,4 @@ Updates:
 7. Added feature to show portfolio change when checking portfolio.
 8. Changed API key due to security leak and added .env file to store the key
 9. Optimized file handling, redundant API calls, improved error handling.
+10. Split Class to sepereate file from main. Added unittests.
