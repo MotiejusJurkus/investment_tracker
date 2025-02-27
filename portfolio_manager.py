@@ -143,7 +143,7 @@ class PortfolioManager:
             del self.portfolio[ticker]
 
         print(f"Sold {amount_to_sell} of {ticker}.\n")
-        self.save_portfolio()
+        self.save_portfolio(force=True)
 
     def check_portfolio(self):
         if not self.portfolio:
